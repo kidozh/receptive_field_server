@@ -45,8 +45,7 @@ def build_no_bn_shortcut_relu_model(depth: int, input_size=(128, 2), primary_fil
     out = Flatten()(out)
     out = Dense(5, activation="softmax")(out)
     model = Model(inputs=[inp], outputs=[out])
-    model.compile(loss='categorical_crossentropy', optimizer=Adam(),
-                  metrics=['categorical_crossentropy', 'acc'])
+    model.compile(loss='categorical_crossentropy',metrics=['categorical_crossentropy', 'acc'])
     return model
 
 

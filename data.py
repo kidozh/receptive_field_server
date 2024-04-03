@@ -9,7 +9,7 @@ import scipy.signal
 from scipy.fftpack import rfft, irfft, fftfreq, fft, ifft
 from sklearn.utils import shuffle
 
-from utils import RAW_SAMPLE_RATE
+RAW_SAMPLE_RATE = 100000
 
 CURRENT_FILE_PATH = os.path.realpath(__file__)
 
@@ -17,7 +17,7 @@ CURRENT_FILE_PATH = os.path.realpath(__file__)
 
 if platform.system() == "Windows":
     parent_dir = r"C:\PythonProject\Philip-experiment"
-if platform.system() == "Darwin":
+elif platform.system() == "Darwin":
     parent_dir = r"~/data/Philip-exp"
 else:
     parent_dir = r"~/python/Philip-experiment/"
