@@ -34,7 +34,7 @@ SAMPLE_END_TIME = INCREMENT_LENGTH
 while True:
     SAMPLE_END_TIME = INCREMENT_LENGTH
     while SAMPLE_END_TIME < subsampled_signal.shape[0]:
-        time.sleep(0.1)
+        time.sleep(SAMPLE_DURATION)
         sample = subsampled_signal[SAMPLE_END_TIME - INCREMENT_LENGTH:SAMPLE_END_TIME]
         sample = np.asarray(sample, dtype=np.float16)
         print(sample.shape)
