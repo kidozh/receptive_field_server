@@ -25,7 +25,6 @@ def resnet_no_bn_shortcut_relu_block(input, stride: int, filter=32, kernel_size=
 
 
 def build_no_bn_shortcut_relu_model(depth: int, input_size=(128, 2), primary_filter=32, max_filter=256):
-
     STRIDE_PER_BLOCK = 5
 
     inp = Input(shape=input_size)
@@ -33,7 +32,7 @@ def build_no_bn_shortcut_relu_model(depth: int, input_size=(128, 2), primary_fil
     out = inp
 
     out = resnet_no_bn_shortcut_relu_block(out, 2, filter=primary_filter, kernel_size=5,
-                                                dropout=0.5)
+                                           dropout=0.5)
 
     for layer_num in range(depth):
         stride_idx = layer_num // STRIDE_PER_BLOCK
@@ -45,7 +44,7 @@ def build_no_bn_shortcut_relu_model(depth: int, input_size=(128, 2), primary_fil
     out = Flatten()(out)
     out = Dense(5, activation="softmax")(out)
     model = Model(inputs=[inp], outputs=[out])
-    model.compile(loss='categorical_crossentropy',metrics=['categorical_crossentropy', 'acc'])
+    model.compile(loss='categorical_crossentropy', metrics=['categorical_crossentropy', 'acc'])
     return model
 
 

@@ -1,6 +1,8 @@
 import json
 from datetime import datetime
 import time
+
+import numpy as np
 from websocket import create_connection
 
 from data_types import SignalData
@@ -14,7 +16,7 @@ ws = create_connection("ws://localhost:8888/live")
 
 TOOL_INDEX = 3
 HOLE_INDEX = 15
-SAMPLE_DURATION = 0.1
+SAMPLE_DURATION = 0.064
 SAMPLE_FREQ = 1000
 
 assert RAW_SAMPLE_RATE % SAMPLE_FREQ == 0
@@ -34,6 +36,8 @@ while True:
     while SAMPLE_END_TIME < subsampled_signal.shape[0]:
         time.sleep(0.1)
         sample = subsampled_signal[SAMPLE_END_TIME - INCREMENT_LENGTH:SAMPLE_END_TIME]
+        sample = np.asarray(sample, dtype=np.float16)
+        print(sample.shape)
         # send it to signal
         signal_data = SignalData(int(datetime.now().timestamp() * 1000), SAMPLE_FREQ, SAMPLE_DURATION, sample.tolist(), 'Processing')
         json_string : str = json.dumps(signal_data.__dict__)
