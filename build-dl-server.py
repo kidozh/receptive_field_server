@@ -108,6 +108,8 @@ class ProcessingWebSocket(tornado.websocket.WebSocketHandler):
 
                 for client in self.observer_client_list:
                     client.write_message(sent_message)
+                for client in self.publisher_client_list:
+                    client.write_message(sent_message)
             except Exception as e:
                 print("NOT A VALID POST")
                 traceback.print_exc()
@@ -191,6 +193,8 @@ class BinaryDataInferenceWebSocket(tornado.websocket.WebSocketHandler):
                 sent_message: str = json.dumps(sent_data)
 
                 for client in self.observer_client_list:
+                    client.write_message(sent_message)
+                for client in self.publisher_client_list:
                     client.write_message(sent_message)
 
             except Exception as e:

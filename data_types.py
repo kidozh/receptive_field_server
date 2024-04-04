@@ -17,8 +17,15 @@ class SignalData:
 
 
 class SignalRequest:
-    acquired_timestamp: int = 0
+    acquired_microsecond: int = 0
     sample_frequency: int = 0
     sample_duration: float = 0
-    signal_arr:list = []
-    status : str = ""
+    signal_arr: list = []
+    should_terminate: bool = False
+
+
+class PredictionResult:
+    probability_list: list = []
+    acquired_microsecond: int = 0
+    recv_microsecond: int = 0
+    processed_microsecond: int = 0
