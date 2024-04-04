@@ -163,7 +163,7 @@ class BinaryDataInferenceWebSocket(tornado.websocket.WebSocketHandler):
                     SKIP_NUMBER = int(signal_data.sample_frequency // 1000)
                     SKIP_NUMBER = 1
                     signal_data.signal_list = signal_array_transpose[:,::SKIP_NUMBER].tolist()
-                    print(pred_signal.shape)
+                    # print(pred_signal.shape)
                     res = model.predict(pred_signal[:, ::SKIP_NUMBER, :])
                     first_pred_result = res[0]
                     pred_index = np.argmax(first_pred_result, axis=0)

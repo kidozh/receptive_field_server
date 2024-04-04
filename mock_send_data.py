@@ -37,7 +37,7 @@ while True:
         time.sleep(SAMPLE_DURATION/2)
         sample = subsampled_signal[SAMPLE_END_TIME - INCREMENT_LENGTH:SAMPLE_END_TIME]
         sample = np.asarray(sample, dtype=np.float16)
-        print(sample.shape)
+        print(sample.shape, sample)
         # send it to signal
         signal_data = SignalData(int(datetime.now().timestamp()), SAMPLE_FREQ, SAMPLE_DURATION, sample.tolist(), 'Processing')
         json_string : str = json.dumps(signal_data.__dict__)
