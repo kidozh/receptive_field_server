@@ -7,7 +7,7 @@ from typing import Optional, Awaitable, Union
 import numpy as np
 import tornado
 import tornado.websocket
-
+from datetime import datetime
 from models import build_no_bn_shortcut_relu_model
 from data_types import SignalData
 
@@ -58,6 +58,7 @@ class ProcessingWebSocket(tornado.websocket.WebSocketHandler):
         # check the type
         if self in self.publisher_client_list:
             # parse the message that recieved
+            request_timestamp = datetime.now().timestamp()
             try:
                 json_data: json = json.loads(message)
                 # need to convert the array
@@ -86,6 +87,9 @@ class ProcessingWebSocket(tornado.websocket.WebSocketHandler):
                     #     ser.write("o".encode())
                     # else:
                     #     ser.write("c".encode())
+                    process_timestamp = datetime.now().timestamp()
+                    record_timestamp = json_data["record_end_timestamp"]
+                    print("Transmission delay %d ms, Processing delay %d ms"%(request_timestamp - record_timestamp, process_timestamp -record_timestamp))
 
 
                 else:
@@ -188,6 +192,7 @@ class BinaryDataInferenceWebSocket(tornado.websocket.WebSocketHandler):
 
                 for client in self.observer_client_list:
                     client.write_message(sent_message)
+
             except Exception as e:
                 print("NOT A VALID POST")
                 traceback.print_exc()

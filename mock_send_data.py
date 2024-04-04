@@ -34,12 +34,12 @@ SAMPLE_END_TIME = INCREMENT_LENGTH
 while True:
     SAMPLE_END_TIME = INCREMENT_LENGTH
     while SAMPLE_END_TIME < subsampled_signal.shape[0]:
-        time.sleep(SAMPLE_DURATION)
+        time.sleep(SAMPLE_DURATION/2)
         sample = subsampled_signal[SAMPLE_END_TIME - INCREMENT_LENGTH:SAMPLE_END_TIME]
         sample = np.asarray(sample, dtype=np.float16)
         print(sample.shape)
         # send it to signal
-        signal_data = SignalData(int(datetime.now().timestamp() * 1000), SAMPLE_FREQ, SAMPLE_DURATION, sample.tolist(), 'Processing')
+        signal_data = SignalData(int(datetime.now().timestamp()), SAMPLE_FREQ, SAMPLE_DURATION, sample.tolist(), 'Processing')
         json_string : str = json.dumps(signal_data.__dict__)
         # print(json_string)
 

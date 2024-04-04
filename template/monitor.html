@@ -143,10 +143,11 @@ Monitor {{code}}
             const multiple_channel_signal_array = data["signal_list"];
 
             //console.log(data)
+            // convert it to millseconds
             const end_timestamp = data["record_end_timestamp"]
             const d = new Date();
             let ms = d.getTime();
-            drillStageApp.timeout = ms - end_timestamp;
+            drillStageApp.timeout = ms / 1000 - end_timestamp;
             // construct
             timestamp = Array.from(new Array(100), (x, i) => i/1000);
 
@@ -169,9 +170,9 @@ Monitor {{code}}
                 return;
             }
 
-            overall_torque_array.push(...current_torque_signal_array);
-            overall_thrust_array.push(...current_thrust_signal_array);
-            overall_timestamp_array.push(...Array.from(new Array(100), (x, i) => i/1000 + start_time))
+            // overall_torque_array.push(...current_torque_signal_array);
+            // overall_thrust_array.push(...current_thrust_signal_array);
+            // overall_timestamp_array.push(...Array.from(new Array(100), (x, i) => i/1000 + start_time))
 
 
 
@@ -232,7 +233,7 @@ Monitor {{code}}
         overallChart = echarts.init(overallChartDom);
 
         myChart.setOption(option);
-        overallChart.setOption(option);
+        // overallChart.setOption(option);
     });
 
 
