@@ -173,6 +173,8 @@ Monitor {{code}}
             // overall_torque_array.push(...current_torque_signal_array);
             // overall_thrust_array.push(...current_thrust_signal_array);
             // overall_timestamp_array.push(...Array.from(new Array(100), (x, i) => i/1000 + start_time))
+            // stops here to reduce rendering timeout
+            return ;
 
 
 

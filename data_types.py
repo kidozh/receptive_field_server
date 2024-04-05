@@ -1,3 +1,6 @@
+import dataclasses
+
+
 class SignalData:
     # timestamp is the milliseconds
     record_end_timestamp: int = 0
@@ -22,6 +25,14 @@ class SignalRequest:
     sample_duration: float = 0
     signal_arr: list = []
     should_terminate: bool = False
+
+    def __init__(self, acquired_microsecond: int, sample_frequency: int, sample_duration: float, signal_arr: list,
+                 should_terminate: bool):
+        self.acquired_microsecond = acquired_microsecond
+        self.sample_frequency = sample_frequency
+        self.sample_duration = sample_duration
+        self.signal_arr = signal_arr
+        self.should_terminate = should_terminate
 
 
 class PredictionResult:
