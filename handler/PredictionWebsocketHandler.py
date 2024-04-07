@@ -77,6 +77,6 @@ class ProcessingWebSocket(tornado.websocket.WebSocketHandler, ABC):
 
 
     def predict_job_worker(self):
-
+        # check with the expiration
         self.q.get()
 

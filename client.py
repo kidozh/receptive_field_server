@@ -15,7 +15,9 @@ class ExponentialBackoffClient:
     Sending the request following exponential backoff
     """
     # the basic relay is 1.414 (sqrt 2)
-    relay_delay_base = 1.41421356
+    # relay_delay_base = 1.41421356
+    relay_delay_base = 2
+    initial_delay_division = 4
     delay = 0
 
     def __init__(self, url: str, sampling_rate: int, sampling_duration: float):
@@ -23,7 +25,7 @@ class ExponentialBackoffClient:
         self.last_submission_time: datetime = datetime.now()
         self.sampling_rate = sampling_rate
         self.sampling_duration = sampling_duration
-        self.initial_delay = sampling_duration / 4
+        self.initial_delay = sampling_duration / self.initial_delay_division
         threading.Thread(
             target=self.websocketApp.run_forever
         ).start()
@@ -39,7 +41,7 @@ class ExponentialBackoffClient:
 
         if second_since_last_submission < self.delay /  self.relay_delay_base:
             self.delay = self.delay / self.relay_delay_base
-        elif second_since_last_submission > self.delay* self.relay_delay_base:
+        elif second_since_last_submission > self.delay:
             self.delay = self.delay * self.relay_delay_base
 
         if self.delay <= self.initial_delay:
