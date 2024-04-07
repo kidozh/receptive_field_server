@@ -25,14 +25,12 @@ class ProcessingWebSocket(tornado.websocket.WebSocketHandler, ABC):
 
     client_dict: dict[str, set] = dict()
 
-
     q = queues.PriorityQueue()
 
     def __int__(self, workers=1, max_prediction_per_fetch=100):
         self.workers = workers
         self.max_prediction_per_fetch = max_prediction_per_fetch
         # start a worker that run forever
-
 
         pass
 
@@ -75,8 +73,14 @@ class ProcessingWebSocket(tornado.websocket.WebSocketHandler, ABC):
         if now.timestamp() - signal_request.acquired_microsecond / 1000 < EXPIRE_SECONDS:
             self.q.put((signal_request.acquired_microsecond, signal_request))
 
-
-    def predict_job_worker(self):
+    async def predict_job_worker(self) :
         # check with the expiration
-        self.q.get()
+        iteration_times = min(self.q.qsize(), self.max_prediction_per_fetch)
+        now = datetime.now()
 
+        for i in range(iteration_times):
+            priority, signal_request = await self.q.get()
+            if now.timestamp() - signal_request.acquired_microsecond / 1000 < EXPIRE_SECONDS:
+                # should append it to the prediction jobs
+
+                pass
