@@ -1,4 +1,7 @@
 import dataclasses
+from typing import Callable, Awaitable, Any
+
+from websockets.legacy.server import WebSocketServerProtocol
 
 
 class SignalData:
@@ -36,6 +39,22 @@ class SignalRequest:
         self.signal_arr = signal_arr
         self.should_terminate = should_terminate
 
+    def __lt__(self, other):
+        return self.acquired_microsecond < other.acquired_microsecond
+
+
+class SignalRequestInPriorityQueue:
+    websocket_protocol: Callable[[WebSocketServerProtocol], Awaitable[Any]]
+    signal_request: SignalRequest
+
+    def __init__(self, websocket_protocol: Callable[[WebSocketServerProtocol], Awaitable[Any]],
+                 signal_request: SignalRequest):
+        self.websocket_protocol = websocket_protocol
+        self.signal_request = signal_request
+
+    def __lt__(self, other):
+        return self.signal_request < other.signal_request
+
 
 class PredictionResult:
     probability_list: list = []
@@ -47,4 +66,3 @@ class PredictionResult:
         self.probability_list = probability_list
         self.acquired_microsecond = acquired_microsecond
         self.processed_microsecond = processed_microsecond
-

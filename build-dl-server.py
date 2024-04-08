@@ -8,6 +8,8 @@ import numpy as np
 import tornado
 import tornado.websocket
 from datetime import datetime
+
+from handler.PredictionWebsocketHandler import BatchPredictionWebSocketHandler
 from models import build_no_bn_shortcut_relu_model
 from data_types import SignalData
 
@@ -32,8 +34,14 @@ class IdentificationProcessingHandler(tornado.web.RequestHandler):
         # set cookie
         self.set_cookie('code', code, expires_days=10)
         self.render("monitor.html", code=code)
-        # self.write(template_loader.load('monitor.html').generate(code=code))
 
+class BenchmarkDisplayHandler(tornado.web.RequestHandler):
+
+    def get(self):
+        code = self.get_argument('code', '')
+        # set cookie
+        self.set_cookie('code', code, expires_days=10)
+        self.render("monitor_benchmark.html", code=code)
 
 class ProcessingWebSocket(tornado.websocket.WebSocketHandler):
     status = "await"
@@ -221,6 +229,7 @@ class TornadoApp(tornado.web.Application):
             (r"/monitor", IdentificationProcessingHandler),
             (r"/live", ProcessingWebSocket),
             (r"/static/(.*)", tornado.web.StaticFileHandler, {"path": "/static"}),
+            (r"/live_ws", BatchPredictionWebSocketHandler, dict(concurrency=2)),
         ]
 
         settings = {
@@ -235,6 +244,7 @@ class TornadoApp(tornado.web.Application):
 async def main():
     app = TornadoApp()
     app.listen(8888)
+
     tornado.autoreload.start()
     for dir, _, files in os.walk('template'):
         [tornado.autoreload.watch(dir + '/' + f) for f in files if not f.startswith('.')]
