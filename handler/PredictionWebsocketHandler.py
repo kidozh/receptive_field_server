@@ -1,5 +1,6 @@
 import json
 import pickle
+import threading
 from abc import ABC
 from typing import Optional, Awaitable, Union
 from datetime import datetime
@@ -30,18 +31,22 @@ model.load_weights("RESNET_NO_BN_LAYER_d_25_f_1000_s_0.064_d0.50_PS_100/ep351-lo
 class ProcessingWebSocket(tornado.websocket.WebSocketHandler, ABC):
     observer_client_list = []
     publisher_client_list = []
-    workers = 1
+    concurrency = 1
     max_prediction_per_fetch = 100
 
     client_dict: dict[str, set] = dict()
 
     q = queues.PriorityQueue()
 
-    def __int__(self, workers=1, max_prediction_per_fetch=100):
-        self.workers = workers
+    def __int__(self, concurrency=1, max_prediction_per_fetch=128):
+        self.concurrency = concurrency
         self.max_prediction_per_fetch = max_prediction_per_fetch
         # start a worker that run forever
-
+        self._workers = gen.multi([self.predict_job_worker() for _ in range(concurrency)])
+        print("Prepare the cache pool")
+        threading.Thread(
+            target=self.q.join
+        ).start()
         pass
 
     def open(self, *args: str, **kwargs: str) -> Optional[Awaitable[None]]:
