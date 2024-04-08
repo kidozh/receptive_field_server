@@ -8,7 +8,7 @@ import numpy as np
 import tornado
 import tornado.websocket
 
-from data_types import SignalRequest
+from data_types import SignalRequest, PredictionResult
 from tornado import gen, queues
 
 from models import build_no_bn_shortcut_relu_model
@@ -104,6 +104,10 @@ class ProcessingWebSocket(tornado.websocket.WebSocketHandler, ABC):
         for i in range(result_arr.shape[0]):
             result = result_arr[i,...]
             signal_request = index_list[i]
+            now = datetime.now()
+            prediction_result = PredictionResult(result.tolist(), signal_request.acquired_microsecond, int(now.timestamp()))
+            json_prediction_result = json.dumps(prediction_result.__dict__)
             # look at the table now
             for client in self.client_dict[signal_request.code]:
-                client.write_message()
+                client.write_message(json_prediction_result)
+

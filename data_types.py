@@ -27,8 +27,8 @@ class SignalRequest:
     signal_arr: list = []
     should_terminate: bool = False
 
-    def __init__(self, code: str, acquired_microsecond: int, sample_frequency: int, sample_duration: float, signal_arr: list,
-                 should_terminate: bool):
+    def __init__(self, code: str, acquired_microsecond: int, sample_frequency: int, sample_duration: float,
+                 signal_arr: list, should_terminate: bool):
         self.code = code
         self.acquired_microsecond = acquired_microsecond
         self.sample_frequency = sample_frequency
@@ -40,6 +40,11 @@ class SignalRequest:
 class PredictionResult:
     probability_list: list = []
     acquired_microsecond: int = 0
-    recv_microsecond: int = 0
+    # recv_microsecond: int = 0
     processed_microsecond: int = 0
+
+    def __init__(self, probability_list: list, acquired_microsecond: int, processed_microsecond: int):
+        self.probability_list = probability_list
+        self.acquired_microsecond = acquired_microsecond
+        self.processed_microsecond = processed_microsecond
 
