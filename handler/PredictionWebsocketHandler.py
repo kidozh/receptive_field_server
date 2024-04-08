@@ -3,11 +3,15 @@ import pickle
 from abc import ABC
 from typing import Optional, Awaitable, Union
 from datetime import datetime
+
+import numpy as np
 import tornado
 import tornado.websocket
 
 from data_types import SignalRequest
 from tornado import gen, queues
+
+from models import build_no_bn_shortcut_relu_model
 
 DEFAULT_COOKIE_KEY = 'code'
 DEFAULT_COOKIE_VALUE = 'default'
@@ -15,6 +19,12 @@ DEFAULT_COOKIE_VALUE = 'default'
 EXPIRE_SECONDS = 5
 
 CONCURRENCY = 1
+
+total_depth = 25
+
+
+model = build_no_bn_shortcut_relu_model(total_depth, primary_filter=32, input_size=(64, 2))
+model.load_weights("RESNET_NO_BN_LAYER_d_25_f_1000_s_0.064_d0.50_PS_100/ep351-loss0.025-val_acc0.991.h5")
 
 
 class ProcessingWebSocket(tornado.websocket.WebSocketHandler, ABC):
@@ -66,6 +76,7 @@ class ProcessingWebSocket(tornado.websocket.WebSocketHandler, ABC):
                 signal_request = obj
 
         if signal_request is None:
+            self.close(1004, 'The message is not a valid SignalRequest object.')
             return
 
         # Check with expiration
@@ -77,10 +88,22 @@ class ProcessingWebSocket(tornado.websocket.WebSocketHandler, ABC):
         # check with the expiration
         iteration_times = min(self.q.qsize(), self.max_prediction_per_fetch)
         now = datetime.now()
-
+        index_list : list[SignalRequest] = []
+        data_list = []
         for i in range(iteration_times):
             priority, signal_request = await self.q.get()
             if now.timestamp() - signal_request.acquired_microsecond / 1000 < EXPIRE_SECONDS:
                 # should append it to the prediction jobs
+                data_list.append(signal_request.signal_arr)
+                index_list.append(signal_request)
 
-                pass
+        # predict by deep learning
+        predict_signal_arr = np.concatenate(data_list, axis=0)
+        result_arr = model.predict(predict_signal_arr)
+        # traverse it one by one
+        for i in range(result_arr.shape[0]):
+            result = result_arr[i,...]
+            signal_request = index_list[i]
+            # look at the table now
+            for client in self.client_dict[signal_request.code]:
+                client.write_message()
