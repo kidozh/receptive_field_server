@@ -11,6 +11,7 @@ import numpy as np
 import tornado
 import tornado.websocket
 from tornado.ioloop import IOLoop
+import tornado.process
 
 from data_types import SignalRequest, PredictionResult
 from tornado import gen, queues, httputil
@@ -59,6 +60,10 @@ class BatchPredictionWebSocketHandler(tornado.websocket.WebSocketHandler, ABC):
         print("Add callback for the method")
         IOLoop.current().add_callback(self.run_worker_forever)
         print("Add consumer by thread")
+
+        tornado.process.Subprocess(
+
+        )
 
         threading.Thread(
             target=self.run_worker_forever
