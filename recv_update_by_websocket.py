@@ -61,7 +61,7 @@ async def predict_handler(websocket):
             print("PUT it in queue", signal_request.acquired_microsecond, predict_queue.qsize())
             signal_request_in_priority_queue = SignalRequestInPriorityQueue(websocket, signal_request)
             predict_queue.put(signal_request_in_priority_queue)
-            await predict_job_worker()
+            # await predict_job_worker()
 
 
 async def predict_job_worker():
@@ -70,7 +70,7 @@ async def predict_job_worker():
     now = datetime.now()
     index_list: list[Callable[[WebSocketServerProtocol], Awaitable[Any]]] = []
     data_list = []
-    # print('Predict iteration ', iteration_times)
+    print('Predict iteration ', iteration_times)
     if iteration_times == 0:
         return
     for i in range(iteration_times):
@@ -106,12 +106,14 @@ async def predict_job_worker():
 async def run_consumer_forever():
     print("RUN IT")
     while True:
+        await asyncio.sleep(0.5)
         await predict_job_worker()
 
 async def main():
     async with serve(predict_handler, "localhost", 8888):
         # await run_consumer_forever()
         print("Successfully run it")
+        await run_consumer_forever()
         await asyncio.Future()  # run forever
 
 asyncio.run(main())
