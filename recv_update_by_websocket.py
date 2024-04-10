@@ -70,23 +70,28 @@ async def predict_job_worker():
     now = datetime.now()
     index_list: list[Callable[[WebSocketServerProtocol], Awaitable[Any]]] = []
     data_list = []
-    print(iteration_times)
+    # print('Predict iteration ', iteration_times)
     if iteration_times == 0:
-        return;
+        return
     for i in range(iteration_times):
         signal_request_in_priority_queue: SignalRequestInPriorityQueue = predict_queue.get()
         signal_request = signal_request_in_priority_queue.signal_request
         websocket_protocol = signal_request_in_priority_queue.websocket_protocol
         if (now.timestamp() - signal_request.acquired_microsecond) / 1000 < EXPIRE_SECONDS:
             # should append it to the prediction jobs
-            data_list.append(signal_request.signal_arr)
+            data_list.append([signal_request.signal_arr])
             index_list.append(websocket_protocol)
+
+    # if len(data_list) == 1:
+    #     # if only one element
+    #     data_list.append(np.zeros(shape=(64,2)))
 
     # predict by deep learning
     predict_signal_arr = np.concatenate(data_list, axis=0)
-    result_arr = await model.predict(predict_signal_arr)
+    print("PREDICT SHAPE",predict_signal_arr.shape)
+    result_arr = model.predict(predict_signal_arr)
     # traverse it one by one
-    for i in range(result_arr.shape[0]):
+    for i in range(len(index_list)):
         result = result_arr[i, ...]
         websocket_protocol = index_list[i]
         now = datetime.now()
@@ -105,6 +110,8 @@ async def run_consumer_forever():
 
 async def main():
     async with serve(predict_handler, "localhost", 8888):
+        # await run_consumer_forever()
+        print("Successfully run it")
         await asyncio.Future()  # run forever
 
 asyncio.run(main())
