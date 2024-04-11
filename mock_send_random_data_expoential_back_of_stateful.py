@@ -4,10 +4,8 @@ import time
 from multiprocessing import Process
 
 import numpy as np
-from websocket import create_connection
 
 from data_types import SignalData, SignalRequest
-from data import Data
 from client import ExponentialBackoffClient, ExponentialBackoffStatefulClient
 
 RAW_SAMPLE_RATE = 100000
