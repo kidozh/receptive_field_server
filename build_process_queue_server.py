@@ -1,3 +1,11 @@
+#  Copyright (c) 2024.
+import time
+
+import tornado.queues
+import tornado.ioloop
+import tornado.gen
+import tornado.web
+
 import asyncio
 import json
 import pickle
@@ -15,7 +23,8 @@ import tornado.websocket
 from tornado.ioloop import IOLoop
 import tornado.process
 
-from data_types import SignalRequest, PredictionResult
+from data_types import SignalRequest, PredictionResult, SignalRequestInPriorityQueue, \
+    SignalRequestTornadoRequestInPriorityQueue
 from tornado import gen, queues, httputil
 
 from models import build_no_bn_shortcut_relu_model
@@ -32,6 +41,23 @@ total_depth = 25
 model = build_no_bn_shortcut_relu_model(total_depth, primary_filter=32, input_size=(64, 2))
 model.load_weights("RESNET_NO_BN_LAYER_d_25_f_1000_s_0.064_d0.50_PS_100/ep351-loss0.025-val_acc0.991.h5")
 
+q = tornado.queues.PriorityQueue()
+
+
+class Consumer():
+
+    def __init__(self):
+        # self.queued_items = tornado.queues.Queue()
+        pass
+
+    @tornado.gen.coroutine
+    def watch_queue(self):
+        while True:
+            print("Watch queue")
+            items = yield q.get()
+            # go_do_something_with_items(items)
+            print(items)
+
 
 class BatchPredictionWebSocketHandler(tornado.websocket.WebSocketHandler, ABC):
     observer_client_list = []
@@ -41,11 +67,7 @@ class BatchPredictionWebSocketHandler(tornado.websocket.WebSocketHandler, ABC):
 
     client_dict: dict[str, set] = dict()
 
-    q = queues.PriorityQueue()
-
-    def initialize(self, concurrency, max_prediction_per_fetch=128) -> None:
-        self.concurrency = concurrency
-        self.max_prediction_per_fetch = max_prediction_per_fetch
+    def initialize(self) -> None:
 
         print("Prepare the cache pool")
 
@@ -62,7 +84,6 @@ class BatchPredictionWebSocketHandler(tornado.websocket.WebSocketHandler, ABC):
         # print("Add callback for the method")
         # IOLoop.current().add_callback(self.run_worker_forever)
         # print("Add consumer by thread")
-
 
     def open(self, *args: str, **kwargs: str) -> Optional[Awaitable[None]]:
         # check the code
@@ -104,11 +125,9 @@ class BatchPredictionWebSocketHandler(tornado.websocket.WebSocketHandler, ABC):
         now = datetime.now()
 
         if (now.timestamp() - signal_request.acquired_microsecond) / 1000 < EXPIRE_SECONDS:
-            print("PUT it in queue", signal_request.acquired_microsecond, self.q.qsize())
-            self.q.put_nowait((signal_request.acquired_microsecond, signal_request))
-            print("Await for execution")
-            await self.predict_job_worker()
-            print("Execution done")
+            signal_request_in_priority_queue = SignalRequestTornadoRequestInPriorityQueue(self, signal_request)
+            print("PUT it in queue", signal_request.acquired_microsecond, q.qsize())
+            q.put_nowait((signal_request.acquired_microsecond, signal_request_in_priority_queue))
 
     @tornado.gen.coroutine
     async def run_worker_forever(self):
@@ -118,16 +137,16 @@ class BatchPredictionWebSocketHandler(tornado.websocket.WebSocketHandler, ABC):
 
     async def predict_job_worker(self):
         # check with the expiration
-        iteration_times = min(self.q.qsize(), self.max_prediction_per_fetch)
+        iteration_times = min(q.qsize(), self.max_prediction_per_fetch)
         now = datetime.now()
         index_list: list[SignalRequest] = []
         data_list = []
-        print("[WORKER]", self.q.qsize(), "->", iteration_times)
+        print("[WORKER]", q.qsize(), "->", iteration_times)
         if iteration_times == 0:
             await asyncio.sleep(0.1)
-            self.q.task_done()
+            q.task_done()
         for i in range(iteration_times):
-            priority, signal_request = await self.q.get()
+            priority, signal_request = await q.get()
             if (now.timestamp() - signal_request.acquired_microsecond) / 1000 < EXPIRE_SECONDS:
                 # should append it to the prediction jobs
                 data_list.append([signal_request.signal_arr])
@@ -145,6 +164,68 @@ class BatchPredictionWebSocketHandler(tornado.websocket.WebSocketHandler, ABC):
                                                  int(now.timestamp()))
             json_prediction_result = json.dumps(prediction_result.__dict__)
             await self.write_message(json_prediction_result)
-            # look at the table now
-            # for client in self.client_dict[signal_request.code]:
-            #     client.write_message(json_prediction_result)
+
+
+async def predict_job_worker():
+    if True:
+        # check with the expiration
+        iteration_times = min(q.qsize(), 128)
+        now = datetime.now()
+        index_list: list[SignalRequestTornadoRequestInPriorityQueue] = []
+        data_list = []
+        print("[WORKER]", q.qsize(), "->", iteration_times)
+        if iteration_times == 0:
+            return
+        for i in range(iteration_times):
+            priority, signal_request_in_priority_queue = await q.get()
+            signal_request = signal_request_in_priority_queue.signal_request
+            if (now.timestamp() - signal_request.acquired_microsecond) / 1000 < EXPIRE_SECONDS:
+                # should append it to the prediction jobs
+                data_list.append([signal_request.signal_arr])
+                index_list.append(signal_request_in_priority_queue)
+
+        # predict by deep learning
+        predict_signal_arr = np.concatenate(data_list, axis=0)
+        result_arr = model.predict(predict_signal_arr)
+        # traverse it one by one
+        for i in range(result_arr.shape[0]):
+            result = result_arr[i, ...]
+            signal_request_in_priority_queue = index_list[i]
+            now = datetime.now()
+            prediction_result = PredictionResult(result.tolist(),
+                                                 signal_request_in_priority_queue.signal_request.acquired_microsecond,
+                                                 int(now.timestamp()))
+            json_prediction_result = json.dumps(prediction_result.__dict__)
+            print(i, result)
+            await signal_request_in_priority_queue.websocket_protocol.write_message(json_prediction_result)
+
+            # await self.write_message(json_prediction_result)
+
+
+async def run_job_consumer():
+    BLOCK_SECOND = 0.1
+    now  = datetime.now()
+    while True:
+
+        await sleep(0.1)
+        await predict_job_worker()
+
+
+if __name__ == "__main__":
+    # client = Consumer()
+    #
+    # # Watch the queue for when new items show up
+    # tornado.ioloop.IOLoop.current().add_callback(client.watch_queue)
+
+    # Create the web server
+    application = tornado.web.Application([
+        (r'/live_ws', BatchPredictionWebSocketHandler),
+    ], debug=True)
+
+    tornado.ioloop.IOLoop.current().add_callback(lambda: run_job_consumer())
+
+    # period_callback = tornado.ioloop.PeriodicCallback(lambda: predict_job_worker(), 100)
+    # period_callback.start()
+
+    application.listen(8888)
+    tornado.ioloop.IOLoop.current().start()

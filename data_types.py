@@ -1,6 +1,7 @@
 import dataclasses
 from typing import Callable, Awaitable, Any
 
+import tornado.websocket
 from websockets.legacy.server import WebSocketServerProtocol
 
 
@@ -48,6 +49,19 @@ class SignalRequestInPriorityQueue:
     signal_request: SignalRequest
 
     def __init__(self, websocket_protocol: Callable[[WebSocketServerProtocol], Awaitable[Any]],
+                 signal_request: SignalRequest):
+        self.websocket_protocol = websocket_protocol
+        self.signal_request = signal_request
+
+    def __lt__(self, other):
+        return self.signal_request < other.signal_request
+
+
+class SignalRequestTornadoRequestInPriorityQueue:
+    websocket_protocol: tornado.websocket.WebSocketHandler
+    signal_request: SignalRequest
+
+    def __init__(self, websocket_protocol: tornado.websocket.WebSocketHandler,
                  signal_request: SignalRequest):
         self.websocket_protocol = websocket_protocol
         self.signal_request = signal_request

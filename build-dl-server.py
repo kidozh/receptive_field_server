@@ -249,6 +249,7 @@ async def main():
     for dir, _, files in os.walk('template'):
         [tornado.autoreload.watch(dir + '/' + f) for f in files if not f.startswith('.')]
     print("The server is now running.")
+
     await asyncio.Event().wait()
 
 

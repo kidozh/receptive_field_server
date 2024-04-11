@@ -17,7 +17,7 @@ class ExponentialBackoffClient:
     # the basic relay is 1.414 (sqrt 2)
     # relay_delay_base = 1.41421356
     relay_delay_base = 2
-    initial_delay_division = 2
+    initial_delay_division = 4
     delay = 0
     recv_last_prediction = False
 

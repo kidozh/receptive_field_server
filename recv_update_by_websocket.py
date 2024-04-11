@@ -4,12 +4,14 @@ import asyncio
 import json
 import pickle
 import queue
+from multiprocessing.queues import Queue, SimpleQueue
 import threading
 from datetime import datetime
-from multiprocessing import Process
+from multiprocessing import Process, freeze_support
 from typing import Callable, Awaitable, Any
 
 import numpy as np
+import tornado.ioloop
 from websockets.legacy.server import WebSocketServerProtocol
 from websockets.server import serve
 
@@ -28,7 +30,7 @@ model = build_no_bn_shortcut_relu_model(total_depth, primary_filter=32, input_si
 model.load_weights("RESNET_NO_BN_LAYER_d_25_f_1000_s_0.064_d0.50_PS_100/ep351-loss0.025-val_acc0.991.h5")
 model.predict(np.zeros(shape=(64,64,2)))
 
-predict_queue = queue.PriorityQueue()
+predict_queue = queue.Queue()
 
 async def echo(websocket):
     async for message in websocket:
@@ -39,6 +41,7 @@ async def predict_handler(websocket):
     """
     It is the consumer
     """
+    await asyncio.sleep(0.5)
     async for message in websocket:
         signal_request = None
         if isinstance(message, str):
@@ -60,7 +63,7 @@ async def predict_handler(websocket):
         if (now.timestamp() - signal_request.acquired_microsecond) / 1000 < EXPIRE_SECONDS:
             print("PUT it in queue", signal_request.acquired_microsecond, predict_queue.qsize())
             signal_request_in_priority_queue = SignalRequestInPriorityQueue(websocket, signal_request)
-            predict_queue.put(signal_request_in_priority_queue)
+            predict_queue.put_nowait(signal_request_in_priority_queue)
             # await predict_job_worker()
 
 
@@ -104,7 +107,7 @@ async def predict_job_worker():
         #     client.write_message(json_prediction_result)
 
 async def run_consumer_forever():
-    print("RUN IT")
+    print("RUN consumer thread")
     while True:
         await asyncio.sleep(0.5)
         await predict_job_worker()
@@ -113,7 +116,11 @@ async def main():
     async with serve(predict_handler, "localhost", 8888):
         # await run_consumer_forever()
         print("Successfully run it")
-        await run_consumer_forever()
         await asyncio.Future()  # run forever
 
-asyncio.run(main())
+
+if __name__ == "__main__":
+    freeze_support()
+
+    asyncio.run(main())
+
