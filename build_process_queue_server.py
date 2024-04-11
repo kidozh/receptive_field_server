@@ -206,9 +206,11 @@ async def run_job_consumer():
     BLOCK_SECOND = 0.1
     now  = datetime.now()
     while True:
-
-        await sleep(0.1)
-        await predict_job_worker()
+        try:
+            await sleep(0.1)
+            await predict_job_worker()
+        except Exception as e:
+            pass
 
 
 if __name__ == "__main__":

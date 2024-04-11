@@ -4,10 +4,6 @@ import platform
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import pywt
-import scipy.signal
-from scipy.fftpack import rfft, irfft, fftfreq, fft, ifft
-from sklearn.utils import shuffle
 
 RAW_SAMPLE_RATE = 100000
 
