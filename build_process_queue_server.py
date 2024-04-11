@@ -40,6 +40,7 @@ total_depth = 25
 
 model = build_no_bn_shortcut_relu_model(total_depth, primary_filter=32, input_size=(64, 2))
 model.load_weights("RESNET_NO_BN_LAYER_d_25_f_1000_s_0.064_d0.50_PS_100/ep351-loss0.025-val_acc0.991.h5")
+model.predict(np.zeros(shape=(1,64,2)))
 
 q = tornado.queues.PriorityQueue()
 
@@ -126,7 +127,7 @@ class BatchPredictionWebSocketHandler(tornado.websocket.WebSocketHandler, ABC):
 
         if (now.timestamp() - signal_request.acquired_microsecond) / 1000 < EXPIRE_SECONDS:
             signal_request_in_priority_queue = SignalRequestTornadoRequestInPriorityQueue(self, signal_request)
-            print("PUT it in queue", signal_request.acquired_microsecond, q.qsize())
+            # print("PUT it in queue", signal_request.acquired_microsecond, q.qsize())
             q.put_nowait((signal_request.acquired_microsecond, signal_request_in_priority_queue))
 
     @tornado.gen.coroutine
@@ -173,7 +174,7 @@ async def predict_job_worker():
         now = datetime.now()
         index_list: list[SignalRequestTornadoRequestInPriorityQueue] = []
         data_list = []
-        print("[WORKER]", q.qsize(), "->", iteration_times)
+        # print("[WORKER]", q.qsize(), "->", iteration_times)
         if iteration_times == 0:
             return
         for i in range(iteration_times):
@@ -196,7 +197,7 @@ async def predict_job_worker():
                                                  signal_request_in_priority_queue.signal_request.acquired_microsecond,
                                                  int(now.timestamp()))
             json_prediction_result = json.dumps(prediction_result.__dict__)
-            print(i, result)
+            # print(i, result)
             await signal_request_in_priority_queue.websocket_protocol.write_message(json_prediction_result)
 
             # await self.write_message(json_prediction_result)
