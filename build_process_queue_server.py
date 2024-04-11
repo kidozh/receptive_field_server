@@ -204,10 +204,16 @@ async def predict_job_worker():
 
 async def run_job_consumer():
     BLOCK_SECOND = 0.1
-    now  = datetime.now()
+    last_execution = datetime.now()
     while True:
         try:
-            await sleep(0.1)
+            now = datetime.now()
+            second_difference = (now.timestamp() - last_execution.timestamp()) / 1000
+            if second_difference >= 0.1:
+                pass
+            else:
+                await sleep(0.1 - second_difference)
+
             await predict_job_worker()
         except Exception as e:
             pass
