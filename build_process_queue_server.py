@@ -94,7 +94,8 @@ class BatchPredictionWebSocketHandler(tornado.websocket.WebSocketHandler, ABC):
             self.client_dict[code] = set()
 
         #  add it to client list
-        self.client_dict[code].add(self)
+        if self not in self.client_dict[code]:
+            self.client_dict[code].add(self)
 
         return super().open(*args, **kwargs)
 
