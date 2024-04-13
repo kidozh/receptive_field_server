@@ -39,7 +39,7 @@ class ExponentialBackoffClient:
         # adjust the speed accordingly
         # check with the delay
         now: datetime = datetime.now()
-        second_since_last_submission = (now.timestamp() - self.last_submission_time.timestamp())
+        second_since_last_submission = (now.timestamp() - self.last_submission_time.timestamp()) / 1e6
         self.recv_last_prediction = True
 
         if second_since_last_submission < self.delay / self.relay_delay_base:
@@ -50,8 +50,8 @@ class ExponentialBackoffClient:
         if self.delay <= self.initial_delay:
             self.delay = self.initial_delay
 
-        print("Actual time: %.3f s, delay %.3f, refresh rate: %.0f Hz" % (
-        second_since_last_submission, self.delay, 1 / self.delay))
+        print("Actual time: %.3f ms, delay %.3f, refresh rate: %.0f Hz" % (
+        second_since_last_submission*100, self.delay, 1 / self.delay))
 
     def send_json_data_if_delay_permitted(self, signalData: SignalData):
         now: datetime = datetime.now()
