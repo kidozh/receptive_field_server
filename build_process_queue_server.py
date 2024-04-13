@@ -1,32 +1,23 @@
 #  Copyright (c) 2024.
-import time
-
-import tornado.queues
-import tornado.ioloop
-import tornado.gen
-import tornado.web
 
 import asyncio
 import json
 import pickle
-import threading
 from abc import ABC
 from asyncio import sleep
-from multiprocessing import Process
-
-from typing import Optional, Awaitable, Union, Any
 from datetime import datetime
+from typing import Optional, Awaitable, Union, Any
 
 import numpy as np
-import tornado
-import tornado.websocket
-from tornado.ioloop import IOLoop
+import tornado.gen
+import tornado.ioloop
 import tornado.process
+import tornado.queues
+import tornado.web
+import tornado.websocket
+from tornado import httputil
 
-from data_types import SignalRequest, PredictionResult, SignalRequestInPriorityQueue, \
-    SignalRequestTornadoRequestInPriorityQueue
-from tornado import gen, queues, httputil
-
+from data_types import SignalRequest, PredictionResult, SignalRequestTornadoRequestInPriorityQueue
 from models import build_no_bn_shortcut_relu_model
 
 DEFAULT_COOKIE_KEY = 'code'
@@ -88,22 +79,23 @@ class BatchPredictionWebSocketHandler(tornado.websocket.WebSocketHandler, ABC):
 
     def open(self, *args: str, **kwargs: str) -> Optional[Awaitable[None]]:
         # check the code
-        code = self.get_cookie(DEFAULT_COOKIE_KEY, DEFAULT_COOKIE_VALUE)
-
-        if code not in self.client_dict.keys():
-            self.client_dict[code] = set()
-
-        #  add it to client list
-        if self not in self.client_dict[code]:
-            self.client_dict[code].add(self)
+        # code = self.get_cookie(DEFAULT_COOKIE_KEY, DEFAULT_COOKIE_VALUE)
+        #
+        # if code not in self.client_dict.keys():
+        #     self.client_dict[code] = set()
+        #
+        # #  add it to client list
+        # if self not in self.client_dict[code]:
+        #     self.client_dict[code].add(self)
 
         return super().open(*args, **kwargs)
 
     def on_close(self) -> None:
-        for code, client_set in self.client_dict.items():
-            if self in client_set:
-                client_set.remove(self)
-                break
+        pass
+        # for code, client_set in self.client_dict.items():
+        #     if self in client_set:
+        #         client_set.remove(self)
+        #         break
 
     async def on_message(self, message: Union[str, bytes]) -> Optional[Awaitable[None]]:
         signal_request = None
@@ -120,6 +112,7 @@ class BatchPredictionWebSocketHandler(tornado.websocket.WebSocketHandler, ABC):
                 signal_request = obj
 
         if signal_request is None:
+            print("Close the client")
             self.close(1004, 'The message is not a valid SignalRequest object.')
             return
 
