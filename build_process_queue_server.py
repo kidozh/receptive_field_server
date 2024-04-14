@@ -52,12 +52,12 @@ class Consumer():
 
 
 class BatchPredictionWebSocketHandler(tornado.websocket.WebSocketHandler, ABC):
-    observer_client_list = []
-    publisher_client_list = []
+    # observer_client_list = []
+    # publisher_client_list = []
     concurrency = 1
     max_prediction_per_fetch = 100
 
-    client_dict: dict[str, set] = dict()
+    # client_dict: dict[str, set] = dict()
 
     def initialize(self) -> None:
 
@@ -87,6 +87,7 @@ class BatchPredictionWebSocketHandler(tornado.websocket.WebSocketHandler, ABC):
         # #  add it to client list
         # if self not in self.client_dict[code]:
         #     self.client_dict[code].add(self)
+        print("SUCCESS! Open a client")
 
         return super().open(*args, **kwargs)
 
@@ -123,6 +124,9 @@ class BatchPredictionWebSocketHandler(tornado.websocket.WebSocketHandler, ABC):
             signal_request_in_priority_queue = SignalRequestTornadoRequestInPriorityQueue(self, signal_request)
 
             q.put_nowait((signal_request.acquired_microsecond, signal_request_in_priority_queue))
+
+    def check_origin(self, origin: str) -> bool:
+        return True
 
     @tornado.gen.coroutine
     async def run_worker_forever(self):
@@ -202,16 +206,22 @@ async def run_job_consumer():
     last_execution = datetime.now()
     while True:
         try:
-            now = datetime.now()
-            second_difference = (now.timestamp() - last_execution.timestamp()) / 1000
-            if second_difference >= 0.1:
-                pass
-            else:
-                await sleep(0.1 - second_difference)
+            # now = datetime.now()
+            # second_difference = min((now.timestamp() - last_execution.timestamp()) / 1000, 0.1)
+            await sleep(0.05)
+            # if second_difference <= 0.04:
+            #     pass
+            # else:
+            #     await sleep(0.1 - second_difference)
 
             await predict_job_worker()
         except Exception as e:
             pass
+
+
+class MainHandler(tornado.web.RequestHandler):
+    def get(self):
+        self.write("The server is successfully established")
 
 
 if __name__ == "__main__":
@@ -222,8 +232,10 @@ if __name__ == "__main__":
 
     # Create the web server
     application = tornado.web.Application([
+        (r"/", MainHandler),
         (r'/live_ws', BatchPredictionWebSocketHandler),
-    ], debug=True)
+    ], debug=True, autoreload=False)
+
 
     tornado.ioloop.IOLoop.current().add_callback(lambda: run_job_consumer())
 
