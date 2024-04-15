@@ -78,10 +78,12 @@ class PredictionResult:
     probability_list: list = []
     acquired_microsecond: int = 0
     queue_microsecond: int = 0
+    calculation_microsecond: int = 0
     processed_microsecond: int = 0
 
-    def __init__(self, probability_list: list, acquired_microsecond: int, queue_microsecond:int, processed_microsecond: int):
+    def __init__(self, probability_list: list, acquired_microsecond: int, queue_microsecond:int, calculation_microsecond: int, processed_microsecond: int):
         self.probability_list = probability_list
         self.acquired_microsecond = acquired_microsecond
         self.queue_microsecond = queue_microsecond
+        self.calculation_microsecond = calculation_microsecond
         self.processed_microsecond = processed_microsecond

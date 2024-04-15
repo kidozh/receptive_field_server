@@ -135,39 +135,6 @@ class BatchPredictionWebSocketHandler(tornado.websocket.WebSocketHandler, ABC):
         while True:
             await self.predict_job_worker()
 
-    async def predict_job_worker(self):
-        # check with the expiration
-        iteration_times = min(q.qsize(), self.max_prediction_per_fetch)
-        now = datetime.now()
-        index_list: list[SignalRequestTornadoRequestInPriorityQueue] = []
-        data_list = []
-        print("[WORKER]", q.qsize(), "->", iteration_times)
-        if iteration_times == 0:
-            await asyncio.sleep(0.1)
-            q.task_done()
-        for i in range(iteration_times):
-            priority, signal_request = await q.get()
-            if (now.timestamp() * 1e6 - signal_request.acquired_microsecond) / 1000 < EXPIRE_SECONDS:
-                # should append it to the prediction jobs
-                data_list.append([signal_request.signal_arr])
-                index_list.append(signal_request)
-
-        # predict by deep learning
-        predict_signal_arr = np.concatenate(data_list, axis=0)
-        result_arr = model.predict(predict_signal_arr)
-
-        # traverse it one by one
-        for i in range(result_arr.shape[0]):
-            result = result_arr[i, ...]
-            signal_request = index_list[i]
-            now = datetime.now()
-            prediction_result = PredictionResult(result.tolist(), signal_request.signal_request.acquired_microsecond,
-                                                 signal_request.queue_microsecond,
-                                                 int(now.timestamp() * 1e6))
-            json_prediction_result = json.dumps(prediction_result.__dict__)
-
-            await self.write_message(json_prediction_result)
-
 
 async def predict_job_worker():
     if True:
@@ -192,6 +159,7 @@ async def predict_job_worker():
                 index_list.append(signal_request_in_priority_queue)
 
         # predict by deep learning
+        calculation_microsecond = int(datetime.now().timestamp() * 1e6)
         predict_signal_arr = np.concatenate(data_list, axis=0)
         result_arr = model.predict(predict_signal_arr)
         # traverse it one by one
@@ -202,6 +170,7 @@ async def predict_job_worker():
             prediction_result = PredictionResult(result.tolist(),
                                                  signal_request_in_priority_queue.signal_request.acquired_microsecond,
                                                  signal_request_in_priority_queue.queue_microsecond,
+                                                 calculation_microsecond,
                                                  int(now.timestamp() * 1e6))
             json_prediction_result = json.dumps(prediction_result.__dict__)
             await signal_request_in_priority_queue.websocket_protocol.write_message(json_prediction_result)
