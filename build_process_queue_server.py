@@ -213,7 +213,7 @@ async def run_job_consumer():
     last_execution = datetime.now()
     while True:
         try:
-            await sleep(0.1)
+            await sleep(0.08)
             # now = datetime.now()
             # second_difference = min((now.timestamp() - last_execution.timestamp()) / 1000, 0.1)
             #
