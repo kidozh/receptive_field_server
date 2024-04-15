@@ -45,6 +45,7 @@ class SignalRequest:
 
 
 class SignalRequestInPriorityQueue:
+
     websocket_protocol: Callable[[WebSocketServerProtocol], Awaitable[Any]]
     signal_request: SignalRequest
 
@@ -53,6 +54,7 @@ class SignalRequestInPriorityQueue:
         self.websocket_protocol = websocket_protocol
         self.signal_request = signal_request
 
+
     def __lt__(self, other):
         return self.signal_request < other.signal_request
 
@@ -60,11 +62,13 @@ class SignalRequestInPriorityQueue:
 class SignalRequestTornadoRequestInPriorityQueue:
     websocket_protocol: tornado.websocket.WebSocketHandler
     signal_request: SignalRequest
+    queue_microsecond: int = 0
 
     def __init__(self, websocket_protocol: tornado.websocket.WebSocketHandler,
-                 signal_request: SignalRequest):
+                 signal_request: SignalRequest, queue_microsecond: int):
         self.websocket_protocol = websocket_protocol
         self.signal_request = signal_request
+        self.queue_microsecond = queue_microsecond
 
     def __lt__(self, other):
         return self.signal_request < other.signal_request
@@ -73,10 +77,11 @@ class SignalRequestTornadoRequestInPriorityQueue:
 class PredictionResult:
     probability_list: list = []
     acquired_microsecond: int = 0
-    # recv_microsecond: int = 0
+    queue_microsecond: int = 0
     processed_microsecond: int = 0
 
-    def __init__(self, probability_list: list, acquired_microsecond: int, processed_microsecond: int):
+    def __init__(self, probability_list: list, acquired_microsecond: int, queue_microsecond:int, processed_microsecond: int):
         self.probability_list = probability_list
         self.acquired_microsecond = acquired_microsecond
+        self.queue_microsecond = queue_microsecond
         self.processed_microsecond = processed_microsecond

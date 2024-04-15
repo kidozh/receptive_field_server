@@ -25,7 +25,7 @@ def send_random_data_to_server():
     expoentialBackoffClient = ExponentialBackoffStatefulClient(CODE, URL, SAMPLE_FREQ, SAMPLE_DURATION)
     while True:
         sample = (np.random.rand(64,2) -0.5)* 1000
-        timestamp = int(datetime.now().timestamp())
+        timestamp = int(datetime.now().timestamp() * 1e6)
         signal_request = SignalRequest(CODE, timestamp, SAMPLE_FREQ, SAMPLE_DURATION, sample.tolist(),
                                        False)
         isSent = expoentialBackoffClient.send_signal_request_json_if_delay_permitted(signal_request)

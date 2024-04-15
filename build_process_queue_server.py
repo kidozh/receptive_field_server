@@ -119,10 +119,11 @@ class BatchPredictionWebSocketHandler(tornado.websocket.WebSocketHandler, ABC):
 
         # Check with expiration
         now = datetime.now()
-        # print("PUT it in queue", signal_request.acquired_microsecond, (now.timestamp() - signal_request.acquired_microsecond) / 1000, q.qsize())
-        if (now.timestamp() - signal_request.acquired_microsecond) / 1000 < EXPIRE_SECONDS:
-            signal_request_in_priority_queue = SignalRequestTornadoRequestInPriorityQueue(self, signal_request)
-
+        # print("PUT it in queue", signal_request.acquired_microsecond*1e6, (now.timestamp() *1e6- signal_request.acquired_microsecond) / 1000, q.qsize())
+        if True or (now.timestamp()*1e6 - signal_request.acquired_microsecond) / 1000 < EXPIRE_SECONDS:
+            # print("PUT")
+            signal_request_in_priority_queue = SignalRequestTornadoRequestInPriorityQueue(self, signal_request, int(now.timestamp()*1e6)
+                                                                                    )
             q.put_nowait((signal_request.acquired_microsecond, signal_request_in_priority_queue))
 
     def check_origin(self, origin: str) -> bool:
@@ -138,7 +139,7 @@ class BatchPredictionWebSocketHandler(tornado.websocket.WebSocketHandler, ABC):
         # check with the expiration
         iteration_times = min(q.qsize(), self.max_prediction_per_fetch)
         now = datetime.now()
-        index_list: list[SignalRequest] = []
+        index_list: list[SignalRequestTornadoRequestInPriorityQueue] = []
         data_list = []
         print("[WORKER]", q.qsize(), "->", iteration_times)
         if iteration_times == 0:
@@ -146,7 +147,7 @@ class BatchPredictionWebSocketHandler(tornado.websocket.WebSocketHandler, ABC):
             q.task_done()
         for i in range(iteration_times):
             priority, signal_request = await q.get()
-            if (now.timestamp() - signal_request.acquired_microsecond) / 1000 < EXPIRE_SECONDS:
+            if (now.timestamp() * 1e6 - signal_request.acquired_microsecond) / 1000 < EXPIRE_SECONDS:
                 # should append it to the prediction jobs
                 data_list.append([signal_request.signal_arr])
                 index_list.append(signal_request)
@@ -154,14 +155,17 @@ class BatchPredictionWebSocketHandler(tornado.websocket.WebSocketHandler, ABC):
         # predict by deep learning
         predict_signal_arr = np.concatenate(data_list, axis=0)
         result_arr = model.predict(predict_signal_arr)
+
         # traverse it one by one
         for i in range(result_arr.shape[0]):
             result = result_arr[i, ...]
             signal_request = index_list[i]
             now = datetime.now()
-            prediction_result = PredictionResult(result.tolist(), signal_request.acquired_microsecond,
-                                                 int(now.timestamp()))
+            prediction_result = PredictionResult(result.tolist(), signal_request.signal_request.acquired_microsecond,
+                                                 signal_request.queue_microsecond,
+                                                 int(now.timestamp() * 1e6))
             json_prediction_result = json.dumps(prediction_result.__dict__)
+
             await self.write_message(json_prediction_result)
 
 
@@ -172,13 +176,16 @@ async def predict_job_worker():
         now = datetime.now()
         index_list: list[SignalRequestTornadoRequestInPriorityQueue] = []
         data_list = []
-        # print("[WORKER]", q.qsize(), "->", iteration_times)
+        # print("[WORKER]", q.qsize(), "->", iteration_times, "<-")
         if iteration_times == 0:
             return
         for i in range(iteration_times):
+            # print("PRIORITY GET", q.qsize())
             priority, signal_request_in_priority_queue = await q.get()
+            # print("RETRIEVE", signal_request_in_priority_queue)
             signal_request = signal_request_in_priority_queue.signal_request
-            if (now.timestamp() - signal_request.acquired_microsecond) / 1e6 < EXPIRE_SECONDS:
+            # print("RESULT", now.timestamp()*1e6, signal_request.acquired_microsecond, now.timestamp() * 1e6 - signal_request.acquired_microsecond)
+            if (now.timestamp() * 1e6 - signal_request.acquired_microsecond) / 1e6 < EXPIRE_SECONDS:
                 # should append it to the prediction jobs
                 data_list.append([signal_request.signal_arr])
                 index_list.append(signal_request_in_priority_queue)
@@ -193,9 +200,9 @@ async def predict_job_worker():
             now = datetime.now()
             prediction_result = PredictionResult(result.tolist(),
                                                  signal_request_in_priority_queue.signal_request.acquired_microsecond,
-                                                 int(now.timestamp()))
+                                                 signal_request_in_priority_queue.queue_microsecond,
+                                                 int(now.timestamp() * 1e6))
             json_prediction_result = json.dumps(prediction_result.__dict__)
-            # print(i, result)
             await signal_request_in_priority_queue.websocket_protocol.write_message(json_prediction_result)
 
             # await self.write_message(json_prediction_result)
@@ -206,16 +213,18 @@ async def run_job_consumer():
     last_execution = datetime.now()
     while True:
         try:
+            await sleep(0.1)
             # now = datetime.now()
             # second_difference = min((now.timestamp() - last_execution.timestamp()) / 1000, 0.1)
-            await sleep(0.05)
-            # if second_difference <= 0.04:
+            #
+            # if second_difference >= 0.05:
             #     pass
             # else:
-            #     await sleep(0.1 - second_difference)
+            #     await sleep(0.05 - second_difference)
 
             await predict_job_worker()
         except Exception as e:
+            print(e)
             pass
 
 
