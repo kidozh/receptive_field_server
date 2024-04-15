@@ -162,11 +162,12 @@ async def predict_job_worker():
         calculation_microsecond = int(datetime.now().timestamp() * 1e6)
         predict_signal_arr = np.concatenate(data_list, axis=0)
         result_arr = model.predict(predict_signal_arr)
+        now = datetime.now()
         # traverse it one by one
         for i in range(result_arr.shape[0]):
             result = result_arr[i, ...]
             signal_request_in_priority_queue = index_list[i]
-            now = datetime.now()
+
             prediction_result = PredictionResult(result.tolist(),
                                                  signal_request_in_priority_queue.signal_request.acquired_microsecond,
                                                  signal_request_in_priority_queue.queue_microsecond,
