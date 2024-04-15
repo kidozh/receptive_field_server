@@ -178,7 +178,7 @@ async def predict_job_worker():
         data_list = []
         # print("[WORKER]", q.qsize(), "->", iteration_times, "<-")
         if iteration_times == 0:
-            await sleep(0.08)
+            await sleep(0.0001)
             return
         for i in range(iteration_times):
             # print("PRIORITY GET", q.qsize())
