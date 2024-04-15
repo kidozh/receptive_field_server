@@ -178,6 +178,7 @@ async def predict_job_worker():
         data_list = []
         # print("[WORKER]", q.qsize(), "->", iteration_times, "<-")
         if iteration_times == 0:
+            await sleep(0.08)
             return
         for i in range(iteration_times):
             # print("PRIORITY GET", q.qsize())
@@ -185,7 +186,7 @@ async def predict_job_worker():
             # print("RETRIEVE", signal_request_in_priority_queue)
             signal_request = signal_request_in_priority_queue.signal_request
             # print("RESULT", now.timestamp()*1e6, signal_request.acquired_microsecond, now.timestamp() * 1e6 - signal_request.acquired_microsecond)
-            if (now.timestamp() * 1e6 - signal_request.acquired_microsecond) / 1e6 < EXPIRE_SECONDS:
+            if True or (now.timestamp() * 1e6 - signal_request.acquired_microsecond) / 1e6 < EXPIRE_SECONDS:
                 # should append it to the prediction jobs
                 data_list.append([signal_request.signal_arr])
                 index_list.append(signal_request_in_priority_queue)
@@ -213,7 +214,7 @@ async def run_job_consumer():
     last_execution = datetime.now()
     while True:
         try:
-            await sleep(0.08)
+
             # now = datetime.now()
             # second_difference = min((now.timestamp() - last_execution.timestamp()) / 1000, 0.1)
             #
