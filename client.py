@@ -6,7 +6,7 @@ import websocket
 import threading
 from datetime import datetime
 
-from data_types import SignalData, SignalRequest
+from data_types import SignalData, SignalRequest, PredictionResult
 
 URL = ""
 
@@ -38,13 +38,15 @@ class ExponentialBackoffClient:
     def on_recv_message(self, websocketApp, message):
         # adjust the speed accordingly
         # check with the delay
+        json_data: json = json.loads(message)
+        predict_result: PredictionResult = PredictionResult(**json_data)
         now: datetime = datetime.now()
-        second_since_last_submission = (now.timestamp() - self.last_submission_time.timestamp()) / 1e6
+        second_since_last_submission = (now.timestamp() * 1e6 - predict_result.acquired_microsecond) / 1e6
         self.recv_last_prediction = True
 
         if second_since_last_submission < self.delay / self.relay_delay_base:
             self.delay = self.delay / self.relay_delay_base
-        elif second_since_last_submission > self.delay / self.relay_delay_base:
+        elif second_since_last_submission > self.delay:
             self.delay = self.delay * self.relay_delay_base
 
         if self.delay <= self.initial_delay:

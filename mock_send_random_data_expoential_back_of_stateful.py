@@ -11,7 +11,7 @@ from client import ExponentialBackoffClient, ExponentialBackoffStatefulClient
 RAW_SAMPLE_RATE = 100000
 
 URL = "ws://localhost:8888/live_ws"
-URL = "ws://10.109.21.57:8888/live_ws"
+# URL = "ws://10.109.21.57:8888/live_ws"
 # send
 
 TOOL_INDEX = 3
@@ -33,7 +33,7 @@ def send_random_data_to_server():
         #     print("SEND", timestamp, sample.shape)
 
 if __name__ == "__main__":
-    thread_number = 10
+    thread_number = 64
     process_list = []
     for _ in range(thread_number):
         p = Process(target=send_random_data_to_server)
