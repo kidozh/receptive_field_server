@@ -16,8 +16,8 @@ class ExponentialBackoffClient:
     Sending the request following exponential backoff
     """
     # the basic relay is 1.414 (sqrt 2)
-    relay_delay_base = 1.41421356
-    # relay_delay_base = 2
+    # relay_delay_base = 1.41421356
+    relay_delay_base = 2
     initial_delay_division = 4
     delay = 0
     recv_last_prediction = False
@@ -46,14 +46,14 @@ class ExponentialBackoffClient:
 
         if second_since_last_submission < self.delay / self.relay_delay_base:
             self.delay = self.delay / self.relay_delay_base
-        elif second_since_last_submission > self.delay:
+        elif second_since_last_submission > self.delay * self.relay_delay_base:
             self.delay = self.delay * self.relay_delay_base
 
         if self.delay <= self.initial_delay:
             self.delay = self.initial_delay
 
-        print("Actual time: %.3f ms, delay %.3f, refresh rate: %.0f Hz" % (
-        second_since_last_submission*100, self.delay, 1 / self.delay))
+        print("Actual time: %.3f s, delay %.3f, refresh rate: %.0f Hz" % (
+        second_since_last_submission, self.delay, 1 / self.delay))
 
     def send_json_data_if_delay_permitted(self, signalData: SignalData):
         now: datetime = datetime.now()
