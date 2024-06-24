@@ -21,8 +21,8 @@ SAMPLE_FREQ = 1000
 
 CODE = "MCR"
 
-def send_random_data_to_server():
-    expoentialBackoffClient = ExponentialBackoffStatefulClient(CODE, URL, SAMPLE_FREQ, SAMPLE_DURATION)
+def send_random_data_to_server(code: int):
+    expoentialBackoffClient = ExponentialBackoffStatefulClient(code, URL, SAMPLE_FREQ, SAMPLE_DURATION)
     while True:
         sample = (np.random.rand(64,2) -0.5)* 1000
         timestamp = int(datetime.now().timestamp() * 1e6)
@@ -33,10 +33,11 @@ def send_random_data_to_server():
         #     print("SEND", timestamp, sample.shape)
 
 if __name__ == "__main__":
-    thread_number = 7
+    thread_number = 16
     process_list = []
-    for _ in range(thread_number):
-        p = Process(target=send_random_data_to_server)
+    for i in range(thread_number):
+        p = Process(target=send_random_data_to_server, args=(i, ))
+        time.sleep(0.02)
         p.start()
         process_list.append(p)
 

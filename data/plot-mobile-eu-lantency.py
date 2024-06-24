@@ -7,7 +7,7 @@ import matplotlib as mpl
 from scipy.interpolate import griddata
 
 n_lines = 21
-cmap = mpl.colormaps['OrRd']
+cmap = mpl.colormaps['Blues']
 
 
 plt.rcParams["font.family"] = "Arial"
@@ -26,7 +26,9 @@ print(data)
 # map = Basemap(projection='ortho',lat_0=53,lon_0=00,resolution='l')
 
 
-map = Basemap(projection='mill',lon_0=0, lat_0=50,resolution='l')
+# map = Basemap(projection='mill',lon_0=0, lat_0=50,resolution='l')
+map = Basemap(projection='cyl',llcrnrlat=30,urcrnrlat=70,\
+            llcrnrlon=-20,urcrnrlon=40,resolution="l")
 # nylat, nylon are lat/lon of New York
 nylat = 40.78; nylon = -73.98
 # lonlat, lonlon are lat/lon of London.
@@ -41,7 +43,7 @@ maximum_latency = 0.3
 
 
 
-ethernet_data = data[data["connectivity"] == "ethernet"]
+ethernet_data = data[data["connectivity"] == "mobile"]
 ethernet_data_exclude_mcr = ethernet_data
 ethernet_data_exclude_mcr_data = ethernet_data[ethernet_data_exclude_mcr["City"] != "Manchester"]
 
@@ -70,18 +72,24 @@ xi, yi = np.meshgrid(xi, yi)
 # interpolate, there are better methods, especially if you have many datapoints
 zi = griddata((m_lon,m_lat),latency,(xi,yi),method='nearest')
 
-fig, ax = plt.subplots(figsize=(12, 12))
+fig, ax = plt.subplots()
 
 # draw map details
 map.drawmapboundary(fill_color='skyblue', zorder = 1)
+map.drawmeridians(np.arange(0,360,30), linewidth=0.2)
+map.drawparallels(np.arange(-90,90,30), linewidth=0.2)
+
+norm = mpl.colors.Normalize(vmin=0, vmax=maximum_latency)
 
 # Plot interpolated temperatures
-map.contourf(xi, yi, zi, cmap=cmap, zorder = 2)
+map.contourf(xi, yi, zi, cmap=cmap, vmin=0, vmax=maximum_latency, zorder = 2)
 
 map.scatter(mcrX, mcrY, 10, marker="s", color="k", zorder=4)
 plt.text(mcrX, mcrY, "Manchester", zorder=4)
 
 map.drawlsmask(ocean_color='skyblue', land_color=(0, 0, 0, 0), lakes=True, zorder = 3)
+
+
 
 # draw coastlines, country boundaries, fill continents.
 map.drawcoastlines(linewidth=0.15)
@@ -90,25 +98,32 @@ map.fillcontinents(color='white',lake_color='aqua')
 # draw the edge of the map projection region (the projection limb)
 # map.drawmapboundary(fill_color='gray')
 # draw lat/lon grid lines every 30 degrees.
-map.drawmeridians(np.arange(0,360,30), linewidth=0.2)
-map.drawparallels(np.arange(-90,90,30), linewidth=0.2)
+
 
 displayed_country = set()
-exclude_country_list = ["Belgium", "Switzerland", "Netherlands", "Poland", "United Kingdom"]
-exclude_state_list = ["Taiwan", "Utah", "Java", "Virginia", "Lowa", "Nevada"]
+include_country_list = ["Belgium", "Switzerland", "Netherlands", "Poland", "United Kingdom", "Germany"]
+
+
 
 for idx, row in ethernet_data_exclude_mcr_data.iterrows():
     country = row["Country"]
     state = row["State"]
 
-    if country not in exclude_country_list and state not in exclude_state_list:
+    if country in include_country_list and country not in displayed_country:
         displayed_country.add(country)
         lon, lat = map(row["Longitude"], row["Latitude"])
-        lon_txt, lat_txt = map(row["Longitude"] - 6, row["Latitude"] - 5)
-        plt.scatter(lon, lat, s=8, marker="o", edgecolors="k", color=cmap(row["total"]/0.4), zorder=4)
-        plt.text(lon_txt, lat_txt, row["City"] +" (%.2fs)"%row["total"], zorder=4)
+        if row["Country"] == "Belgium":
+            lon_txt, lat_txt = map(row["Longitude"]-10, row["Latitude"] - 2)
+        else:
+            lon_txt, lat_txt = map(row["Longitude"], row["Latitude"] + 0.5)
+        plt.scatter(lon, lat, s=8, marker="o", edgecolors="k", color=cmap(row["total"]/maximum_latency), zorder=4)
+        plt.text(lon_txt, lat_txt, row["City"] +" (%.2fs)"%row["total"],
+                 zorder=4,)
         print(row["connectivity"], row["City"], row["total"])
 
-plt.colorbar()
 
+cbar = plt.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
+             ax=ax, orientation='vertical', label='Latency')
+
+plt.tight_layout()
 plt.show()

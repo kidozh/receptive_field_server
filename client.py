@@ -87,8 +87,9 @@ class ExponentialBackoffClient:
     initial_delay_division = 4
     delay = 0
     recv_last_prediction = False
+    code_no = 0
 
-    def __init__(self, url: str, sampling_rate: int, sampling_duration: float):
+    def __init__(self, url: str, sampling_rate: int, sampling_duration: float, code_no=int):
         self.websocketApp = websocket.WebSocketApp(url, on_message=self.on_recv_message)
         self.last_submission_time: datetime = datetime.now()
         self.sampling_rate = sampling_rate
@@ -97,6 +98,7 @@ class ExponentialBackoffClient:
         threading.Thread(
             target=self.websocketApp.run_forever
         ).start()
+        self.code_no = code_no
         print("Please wait 1s for establishment")
         time.sleep(1)
         # self.websocketApp.run_forever()
@@ -118,8 +120,11 @@ class ExponentialBackoffClient:
         if self.delay <= self.initial_delay:
             self.delay = self.initial_delay
 
-        print("Actual time: %.3f s, delay %.3f, refresh rate: %.0f Hz" % (
-            second_since_last_submission, self.delay, 1 / self.delay))
+        if self.code_no == 0:
+            print("%s\t%.3f\t%.3f\t%.3f\t%.0f" % (self.code_no, now.timestamp(), second_since_last_submission, self.delay, 1 / self.delay))
+
+        # print("Actual time: %.3f s, delay %.3f, refresh rate: %.0f Hz" % (
+        #     second_since_last_submission, self.delay, 1 / self.delay))
 
     def send_json_data_if_delay_permitted(self, signalData: SignalData):
         now: datetime = datetime.now()
@@ -142,8 +147,8 @@ class ExponentialBackoffClient:
 class ExponentialBackoffStatefulClient(ExponentialBackoffClient):
     code: str
 
-    def __init__(self, code: str, url: str, sampling_rate: int, sampling_duration: float, *args, **kwargs):
-        super().__init__(url, sampling_rate, sampling_duration)
+    def __init__(self, code: int, url: str, sampling_rate: int, sampling_duration: float, *args, **kwargs):
+        super().__init__(url, sampling_rate, sampling_duration, code_no=code)
         self.code = code
 
     def send_signal_request_json_if_delay_permitted(self, signalRequest: SignalRequest):

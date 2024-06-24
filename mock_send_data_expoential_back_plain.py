@@ -40,7 +40,7 @@ SAMPLE_END_TIME = INCREMENT_LENGTH
 print("Ready to send request")
 
 def send_random_data_to_server(code: int):
-    plainClient = PlainClient(code, URL, SAMPLE_FREQ, SAMPLE_DURATION, initial_delay_division=1)
+    plainClient = PlainClient(code, URL, SAMPLE_FREQ, SAMPLE_DURATION, initial_delay_division=8)
     while True:
         SAMPLE_END_TIME = INCREMENT_LENGTH
         while SAMPLE_END_TIME < subsampled_signal.shape[0]:
@@ -63,7 +63,7 @@ def send_random_data_to_server(code: int):
 
 
 if __name__ == "__main__":
-    thread_number = 4
+    thread_number = 1
     process_list = []
     for i in range(thread_number):
         p = Process(target=send_random_data_to_server, args=(i, ))

@@ -1,6 +1,7 @@
 import json
 from datetime import datetime
 import time
+from multiprocessing import Process
 
 import numpy as np
 from websocket import create_connection
@@ -34,29 +35,43 @@ print(multi_channel_signal.shape)
 INCREMENT_LENGTH = int(SAMPLE_FREQ * SAMPLE_DURATION)
 SAMPLE_END_TIME = INCREMENT_LENGTH
 
-expoentialBackoffClient = ExponentialBackoffStatefulClient(CODE, URL, SAMPLE_FREQ, SAMPLE_DURATION)
+
 
 print("Ready to send request")
 
-while True:
-    SAMPLE_END_TIME = INCREMENT_LENGTH
-    while SAMPLE_END_TIME < subsampled_signal.shape[0]:
-        # time.sleep(0.01)
-        sample = subsampled_signal[SAMPLE_END_TIME - INCREMENT_LENGTH:SAMPLE_END_TIME]
-        sample = np.asarray(sample, dtype=np.float16)
-        # print(sample.shape, sample)
-        # send it to signal
-        timestamp = int(datetime.now().timestamp())
-        signal_request = SignalRequest(CODE, timestamp, SAMPLE_FREQ, SAMPLE_DURATION, sample.tolist(),
-                                       False)
-        isSent = expoentialBackoffClient.send_signal_request_json_if_delay_permitted(signal_request)
-        if isSent:
-            print("SEND", timestamp, sample.shape)
+def send_random_data_to_server(code: int):
+    expoentialBackoffClient = ExponentialBackoffStatefulClient(code, URL, SAMPLE_FREQ, SAMPLE_DURATION)
+    while True:
+        SAMPLE_END_TIME = INCREMENT_LENGTH
+        while SAMPLE_END_TIME < subsampled_signal.shape[0]:
+            # time.sleep(0.01)
+            sample = subsampled_signal[SAMPLE_END_TIME - INCREMENT_LENGTH:SAMPLE_END_TIME]
+            sample = np.asarray(sample, dtype=np.float16)
+            # print(sample.shape, sample)
+            # send it to signal
+            timestamp = int(datetime.now().timestamp())
+            signal_request = SignalRequest(CODE, timestamp, SAMPLE_FREQ, SAMPLE_DURATION, sample.tolist(),
+                                           False)
+            isSent = expoentialBackoffClient.send_signal_request_json_if_delay_permitted(signal_request)
+            # if isSent:
+            #     print("SEND", timestamp, sample.shape)
 
-        SAMPLE_END_TIME += INCREMENT_LENGTH
+            SAMPLE_END_TIME += INCREMENT_LENGTH
 
-signal_data = SignalData(int(time.time() * 1000), SAMPLE_FREQ, SAMPLE_DURATION, [], 'end')
-json_string: str = json.dumps(signal_data.__dict__)
-print(ws.send(json_string))
+if __name__ == "__main__":
+    thread_number = 1
+    process_list = []
+    for i in range(thread_number):
+        p = Process(target=send_random_data_to_server, args=(i, ))
+        p.start()
+        process_list.append(p)
 
-ws.close()
+    for p in process_list:
+        p.join()
+
+
+# signal_data = SignalData(int(time.time() * 1000), SAMPLE_FREQ, SAMPLE_DURATION, [], 'end')
+# json_string: str = json.dumps(signal_data.__dict__)
+# print(ws.send(json_string))
+#
+# ws.close()
