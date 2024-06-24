@@ -47,24 +47,24 @@ class ProcessingWebSocket(tornado.websocket.WebSocketHandler):
     status = "await"
 
     # to host client information
-    observer_client_list = []
-    publisher_client_list = []
+    client_list = []
 
     def open(self, *args: str, **kwargs: str) -> Optional[Awaitable[None]]:
-        # check the code
-        code = self.get_cookie('code', '')
-        if code != '':
-            # it is a observer client
-            self.observer_client_list.append(self)
-        else:
-            self.publisher_client_list.append(self)
-        print("recv code token:", code)
+        self.client_list.append(self)
+        # # check the code
+        # code = self.get_cookie('code', '')
+        # if code != '':
+        #     # it is a observer client
+        #
+        # else:
+        #     self.publisher_client_list.append(self)
+        # print("recv code token:", code)
 
         return super().open(*args, **kwargs)
 
     def on_message(self, message: Union[str, bytes]) -> Optional[Awaitable[None]]:
         # check the type
-        if self in self.publisher_client_list:
+        if self in self.client_list:
             # parse the message that recieved
             request_timestamp = datetime.now().timestamp()
             try:
@@ -113,24 +113,18 @@ class ProcessingWebSocket(tornado.websocket.WebSocketHandler):
                 sent_data = signal_data.__dict__
                 sent_data["predict_result"] = predict_result
                 sent_message: str = json.dumps(sent_data)
-
-                for client in self.observer_client_list:
-                    client.write_message(sent_message)
-                for client in self.publisher_client_list:
-                    client.write_message(sent_message)
+                self.write_message(sent_message)
+                print("Write the message")
             except Exception as e:
                 print("NOT A VALID POST")
                 traceback.print_exc()
-        elif self in self.observer_client_list:
+        elif self in self.client_list:
             # the observer part
             pass
         # return super().on_message(message)
 
     def on_close(self) -> None:
-        if self in self.observer_client_list:
-            self.observer_client_list.remove(self)
-        if self in self.publisher_client_list:
-            self.publisher_client_list.remove(self)
+        self.client_list.remove(self)
         return super().on_close()
 
 class BinaryDataInferenceWebSocket(tornado.websocket.WebSocketHandler):
@@ -154,7 +148,7 @@ class BinaryDataInferenceWebSocket(tornado.websocket.WebSocketHandler):
 
     def on_message(self, message: Union[str, bytes]) -> Optional[Awaitable[None]]:
         # check the type
-        if self in self.publisher_client_list:
+        if self in self.client_list:
             # parse the message that recieved
             try:
                 json_data: json = json.loads(message)
@@ -199,16 +193,17 @@ class BinaryDataInferenceWebSocket(tornado.websocket.WebSocketHandler):
                 sent_data = signal_data.__dict__
                 sent_data["predict_result"] = predict_result
                 sent_message: str = json.dumps(sent_data)
+                self.write_message(sent_message)
 
-                for client in self.observer_client_list:
-                    client.write_message(sent_message)
-                for client in self.publisher_client_list:
-                    client.write_message(sent_message)
+                # for client in self.client_list:
+                #     client.write_message(sent_message)
+                # for client in self.publisher_client_list:
+                #     client.write_message(sent_message)
 
             except Exception as e:
                 print("NOT A VALID POST")
                 traceback.print_exc()
-        elif self in self.observer_client_list:
+        elif self in self.client_list:
             # the observer part
             pass
         # return super().on_message(message)
