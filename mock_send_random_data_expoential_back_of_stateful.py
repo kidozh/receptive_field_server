@@ -33,7 +33,7 @@ def send_random_data_to_server():
         #     print("SEND", timestamp, sample.shape)
 
 if __name__ == "__main__":
-    thread_number = 64
+    thread_number = 7
     process_list = []
     for _ in range(thread_number):
         p = Process(target=send_random_data_to_server)

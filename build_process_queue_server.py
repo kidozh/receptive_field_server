@@ -145,7 +145,7 @@ async def predict_job_worker():
         data_list = []
         # print("[WORKER]", q.qsize(), "->", iteration_times, "<-")
         if iteration_times == 0:
-            await sleep(0.0001)
+            await asyncio.sleep(0.064 / 4)
             return
         for i in range(iteration_times):
             # print("PRIORITY GET", q.qsize())
@@ -192,6 +192,7 @@ async def run_job_consumer():
             #     pass
             # else:
             #     await sleep(0.05 - second_difference)
+            # await asyncio.sleep(0.016)
 
             await predict_job_worker()
         except Exception as e:

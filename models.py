@@ -1,6 +1,5 @@
-from keras.models import *
 from keras.layers import *
-from keras.optimizers import *
+from keras.models import Model
 
 
 def resnet_no_bn_shortcut_relu_block(input, stride: int, filter=32, kernel_size=3, dropout=0.5):
