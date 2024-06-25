@@ -37,7 +37,7 @@ if __name__ == "__main__":
     process_list = []
     for i in range(thread_number):
         p = Process(target=send_random_data_to_server, args=(i, ))
-        time.sleep(0.02)
+        time.sleep(3)
         p.start()
         process_list.append(p)
 
