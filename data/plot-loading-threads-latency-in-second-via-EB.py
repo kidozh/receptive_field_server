@@ -24,19 +24,20 @@ N = np.arange(0, max_time_range)
 arr = data["latency"][N]
 timestamp = data["timestamp"][N]
 
-timestamp = timestamp - timestamp[0]
+timestamp = timestamp - timestamp[0] + 0.06
 
 plt.plot(timestamp, data["latency"][N], label="Latency")
 
-for i in range(0, 16):
-    plt.axvline(i*3, linestyle="dashed", color="grey", linewidth=1)
-    plt.text(i*3, 1.0, "%d"%(i+1))
+for i in range(1, 16):
+
+    plt.axvline(i*3 + 1, linestyle="dashed", color="grey", linewidth=1)
+    plt.text(i*3 + 1, 0.97, "%d"%(i+1))
 
 plt.xlabel("Time [s]")
 plt.ylabel("Latency [s]")
 
-plt.ylim(0, 1.2)
+# plt.ylim(0, 1.2)
 plt.tight_layout()
 
-plt.legend()
+# plt.legend()
 plt.show()

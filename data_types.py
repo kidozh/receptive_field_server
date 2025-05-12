@@ -1,6 +1,9 @@
 import dataclasses
+import sys
+from datetime import datetime
 from typing import Callable, Awaitable, Any
 
+import numpy as np
 import tornado.websocket
 from websockets.legacy.server import WebSocketServerProtocol
 
@@ -87,3 +90,37 @@ class PredictionResult:
         self.queue_microsecond = queue_microsecond
         self.calculation_microsecond = calculation_microsecond
         self.processed_microsecond = processed_microsecond
+
+
+if __name__ == "__main__":
+    microsecond = datetime.now().microsecond
+
+    status_bool = True
+
+    bit_size = [64, 32, 16]
+
+    for product_size in [64, 128, 256, 512, 1024]:
+        for np_type in [np.float64, np.float32, np.float16]:
+            signal_arr = np.random.random((product_size, 1)).astype(np_type)
+            print(np_type, product_size, sys.getsizeof(signal_arr))
+
+
+    # for sample_duration in [0.064, 0.128, 0.192, 0.256, 0.384, 0.448, 0.512, 0.576, 0.064]:
+    #     for sample_freq in range(100, 1100, 100):
+    #         signal_arr = np.random.random((int(sample_freq * sample_duration), 1)).astype(np.float64)
+    #         print(sample_duration, sample_freq, sys.getsizeof(signal_arr))
+
+
+    # sample_freq = 1000
+    # sample_duration = 0.064
+    # signal_arr = np.random.random((int(sample_freq * sample_duration), 1)).astype(np.float64)
+    # signal_list = signal_arr.tolist()
+    # signal_request = SignalRequest(
+    #     "CNT",
+    #     microsecond,
+    #     sample_freq,
+    #     sample_duration,
+    #     signal_list,
+    #     status_bool
+    # )
+    # print(sys.getsizeof(signal_request), sys.getsizeof(signal_arr))

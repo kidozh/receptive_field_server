@@ -17,6 +17,7 @@ print(data["latency4"])
 max_time_range = 40
 
 INTERVAL_SECOND_LIST = [None, 0.064, 0.032, 0.016, 0.008]
+# INTERVAL_SECOND_LIST = [None, 0.008, 0.016, 0.032, 0.064]
 LINESTYLE_LIST = [None, "solid", "dashed", "dashdot", "dotted"]
 
 for i in range(1, 5):
@@ -30,6 +31,7 @@ for i in range(1, 5):
 plt.xlabel("Time [s]")
 plt.ylabel("Latency [s]")
 plt.tight_layout()
+plt.xlim(0, 5)
 
 plt.legend()
 plt.show()
